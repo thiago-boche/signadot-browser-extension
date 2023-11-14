@@ -4,38 +4,43 @@ type HeaderOperation = 'append' | 'set' | 'remove' | 'removeIfEmpty';
 
 const ROUTING_KEY = "routingKey";
 const ENABLED_KEY = "enabled";
-const ROUTING_KEY_HEADER_KEY = "uberctx-sd-routing-key";
+const ROUTING_HEADER_KEYS: string[] = ["uberctx-sd-workspace", "uberctx-sd-sandbox", "uberctx-sd-routing-key", "uberctx-sd-request-id", "ot-baggage-sd-workspace", "ot-baggage-sd-sandbox", "ot-baggage-sd-routing-key", "ot-baggage-sd-request-id", "baggage", "sd-workspace", "sd-sandbox", "sd-routing-key", "sd-request-id", "tracestate", "sd-workspace", "sd-sandbox", "sd-routing-key", "sd-request-id"];
 
 let inMemoryHeaderValue: string | undefined = undefined;
 let inMemoryFeatureEnabled: boolean = false;
 
-function updateDynamicRules() {
-  if (inMemoryFeatureEnabled) {
-    // Define the rule for modifying request headers.
-    const rule: chrome.declarativeNetRequest.Rule = {
-      "id": 1,
-      "priority": 1,
-      "action": {
-        "type": chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-        "requestHeaders": [
-          {
-            "header": ROUTING_KEY_HEADER_KEY,
-            "operation": chrome.declarativeNetRequest.HeaderOperation.SET,
-            "value": inMemoryHeaderValue || ''
-          },
-        ]
+const getRules = (headerKeys: string[], value: string): chrome.declarativeNetRequest.Rule[] => headerKeys.map((key, idx) => ({
+  "id": idx + 1,
+  "priority": 1,
+  "action": {
+    "type": chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+    "requestHeaders": [
+      {
+        "header": key,
+        "operation": chrome.declarativeNetRequest.HeaderOperation.SET,
+        "value": value
       },
-      "condition": {
-        "urlFilter": "*",
-        "resourceTypes": [chrome.declarativeNetRequest.ResourceType.MAIN_FRAME]
-      }
-    };
+    ]
+  },
+  "condition": {
+    "urlFilter": "*",
+    "resourceTypes": [chrome.declarativeNetRequest.ResourceType.MAIN_FRAME]
+  }
+} as chrome.declarativeNetRequest.Rule))
 
+const getCurrentRuleIDs = (rules: chrome.declarativeNetRequest.Rule[]): number[] => rules.map(rule => rule.id)
+
+async function updateDynamicRules() {
+  if (inMemoryFeatureEnabled) {
+    const rules = getRules(ROUTING_HEADER_KEYS, inMemoryHeaderValue || "")
     // Update the dynamic rules
     chrome.declarativeNetRequest.updateDynamicRules(
       {
-        addRules: [rule], // Set the new rule
-        removeRuleIds: [1] // Remove the previous rule
+        // Set the new rules
+        addRules: rules,
+
+        // Remove the previous rules
+        removeRuleIds: getCurrentRuleIDs(await chrome.declarativeNetRequest.getDynamicRules())
       }
     ).then(() => {
       // Adding console.log() to help with debugging (Should be fine to retain in published script)
@@ -48,7 +53,7 @@ function updateDynamicRules() {
   } else {
     // Remove the previously set rule
     chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [1]
+      removeRuleIds: getCurrentRuleIDs(await chrome.declarativeNetRequest.getDynamicRules())
     });
   }
 }
@@ -70,11 +75,11 @@ chrome.runtime.onStartup.addListener(() => updateInMemoryValues());
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'local') {
     let updated = false;
-    if (changes[ROUTING_KEY]) {
+    if (ROUTING_KEY in changes) {
       inMemoryHeaderValue = changes[ROUTING_KEY]?.newValue;
       updated = true;
     }
-    if (changes[ENABLED_KEY]) {
+    if (ENABLED_KEY in changes) {
       inMemoryFeatureEnabled = !!(changes[ENABLED_KEY]?.newValue);
       updated = true;
     }
