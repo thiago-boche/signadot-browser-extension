@@ -19,7 +19,6 @@ const Frame = () => {
   const [storageValue, setStorageValue] = React.useState<string>("");
 
   // const logoImageUrl = chrome.runtime.getURL("images/signadot-full-logo.png");
-
   const saveRoutingKey = () => {
     chrome.storage.local.set(
       {
