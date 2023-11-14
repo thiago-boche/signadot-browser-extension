@@ -1,20 +1,20 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
 
   "name": "Signadot Chrome Extension",
   "description": "Signadot Chrome Extension",
   "version": "1.0",
 
-  "browser_action": {
+  "action": {
     "default_icon": "images/signadot-logo.png",
     "default_popup": "popup.html"
   },
 
   "content_scripts": [
-      {
-          "matches": ["<all_urls>"],
-          "js": ["js/vendor.js", "js/content_script.js"]
-      }
+    {
+      "matches": ["<all_urls>"],
+      "js": ["js/vendor.js", "js/content_script.js"]
+    }
   ],
 
   "background": {
@@ -22,9 +22,13 @@
   },
 
   "permissions": [
-    "<all_urls>",
     "storage",
-    "webRequest",
-    "webRequestBlocking"
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "declarativeNetRequestWithHostAccess"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
   ]
 }
