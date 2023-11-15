@@ -1,59 +1,92 @@
 // background.ts
 
-type HeaderOperation = 'append' | 'set' | 'remove' | 'removeIfEmpty';
+type HeaderOperation = "append" | "set" | "remove" | "removeIfEmpty";
 
 const ROUTING_KEY = "routingKey";
 const ENABLED_KEY = "enabled";
-const ROUTING_HEADER_KEYS: string[] = ["uberctx-sd-workspace", "uberctx-sd-sandbox", "uberctx-sd-routing-key", "uberctx-sd-request-id", "ot-baggage-sd-workspace", "ot-baggage-sd-sandbox", "ot-baggage-sd-routing-key", "ot-baggage-sd-request-id", "baggage", "sd-workspace", "sd-sandbox", "sd-routing-key", "sd-request-id", "tracestate", "sd-workspace", "sd-sandbox", "sd-routing-key", "sd-request-id"];
+const ROUTING_HEADER_KEYS: string[] = [
+  "uberctx-sd-workspace",
+  "uberctx-sd-sandbox",
+  "uberctx-sd-routing-key",
+  "uberctx-sd-request-id",
+  "ot-baggage-sd-workspace",
+  "ot-baggage-sd-sandbox",
+  "ot-baggage-sd-routing-key",
+  "ot-baggage-sd-request-id",
+  "baggage",
+  "sd-workspace",
+  "sd-sandbox",
+  "sd-routing-key",
+  "sd-request-id",
+  "tracestate",
+  "sd-workspace",
+  "sd-sandbox",
+  "sd-routing-key",
+  "sd-request-id",
+];
 
 let inMemoryHeaderValue: string | undefined = undefined;
 let inMemoryFeatureEnabled: boolean = false;
 
-const getRules = (headerKeys: string[], value: string): chrome.declarativeNetRequest.Rule[] => headerKeys.map((key, idx) => ({
-  "id": idx + 1,
-  "priority": 1,
-  "action": {
-    "type": chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-    "requestHeaders": [
-      {
-        "header": key,
-        "operation": chrome.declarativeNetRequest.HeaderOperation.SET,
-        "value": value
-      },
-    ]
-  },
-  "condition": {
-    "urlFilter": "*",
-    "resourceTypes": [chrome.declarativeNetRequest.ResourceType.MAIN_FRAME]
-  }
-} as chrome.declarativeNetRequest.Rule))
+const getRules = (
+  headerKeys: string[],
+  value: string
+): chrome.declarativeNetRequest.Rule[] =>
+  headerKeys.map(
+    (key, idx) =>
+      ({
+        id: idx + 1,
+        priority: 1,
+        action: {
+          type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+          requestHeaders: [
+            {
+              header: key,
+              operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+              value: value,
+            },
+          ],
+        },
+        condition: {
+          urlFilter: "*",
+          resourceTypes: [chrome.declarativeNetRequest.ResourceType.MAIN_FRAME],
+        },
+      } as chrome.declarativeNetRequest.Rule)
+  );
 
-const getCurrentRuleIDs = (rules: chrome.declarativeNetRequest.Rule[]): number[] => rules.map(rule => rule.id)
+const getCurrentRuleIDs = (
+  rules: chrome.declarativeNetRequest.Rule[]
+): number[] => rules.map((rule) => rule.id);
 
 async function updateDynamicRules() {
   if (inMemoryFeatureEnabled) {
-    const rules = getRules(ROUTING_HEADER_KEYS, inMemoryHeaderValue || "")
+    const rules = getRules(ROUTING_HEADER_KEYS, inMemoryHeaderValue || "");
     // Update the dynamic rules
-    chrome.declarativeNetRequest.updateDynamicRules(
-      {
+    chrome.declarativeNetRequest
+      .updateDynamicRules({
         // Set the new rules
         addRules: rules,
 
         // Remove the previous rules
-        removeRuleIds: getCurrentRuleIDs(await chrome.declarativeNetRequest.getDynamicRules())
-      }
-    ).then(() => {
-      // Adding console.log() to help with debugging (Should be fine to retain in published script)
-      chrome.declarativeNetRequest.getDynamicRules().then(rules => {
-        console.log(">> NEW DYNAMIC RULES: ", JSON.stringify(rules));
+        removeRuleIds: getCurrentRuleIDs(
+          await chrome.declarativeNetRequest.getDynamicRules()
+        ),
       })
-    }).catch((error) => {
-      console.log('>> Error updating dynamic rule:', error);
-    });
+      .then(() => {
+        // Adding console.log() to help with debugging (Should be fine to retain in published script)
+        chrome.declarativeNetRequest.getDynamicRules().then((rules) => {
+          console.log(">> NEW DYNAMIC RULES: ", JSON.stringify(rules));
+        });
+      })
+      .catch((error) => {
+        console.log(">> Error updating dynamic rule:", error);
+      });
   } else {
     // Remove the previously set rule
     chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: getCurrentRuleIDs(await chrome.declarativeNetRequest.getDynamicRules())
+      removeRuleIds: getCurrentRuleIDs(
+        await chrome.declarativeNetRequest.getDynamicRules()
+      ),
     });
   }
 }
@@ -73,14 +106,14 @@ chrome.runtime.onStartup.addListener(() => updateInMemoryValues());
 
 // Keep the in-memory value in sync with changes in storage
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'local') {
+  if (areaName === "local") {
     let updated = false;
     if (ROUTING_KEY in changes) {
       inMemoryHeaderValue = changes[ROUTING_KEY]?.newValue;
       updated = true;
     }
     if (ENABLED_KEY in changes) {
-      inMemoryFeatureEnabled = !!(changes[ENABLED_KEY]?.newValue);
+      inMemoryFeatureEnabled = !!changes[ENABLED_KEY]?.newValue;
       updated = true;
     }
     if (updated) {

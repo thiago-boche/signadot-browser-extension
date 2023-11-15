@@ -1,6 +1,6 @@
-import React, {useEffect} from "react";
+import React, { useEffect } from "react";
 import styles from "./Frame.module.css";
-import {Button, Intent, Switch} from "@blueprintjs/core";
+import { Button, Intent, Switch } from "@blueprintjs/core";
 
 const ROUTING_KEY = "routingKey";
 const ENABLED = "enabled";
@@ -61,7 +61,7 @@ const Frame = () => {
     });
 
     const handleStorageChange = (changes: StorageChange, area: string) => {
-      if (area === 'local' && changes[ROUTING_KEY]) {
+      if (area === "local" && changes[ROUTING_KEY]) {
         setStorageValue(changes[ROUTING_KEY].newValue || "");
       }
     };
@@ -81,10 +81,15 @@ const Frame = () => {
       </div>
       <div className={styles.body}>
         <div className={styles.switchPanel}>
-          <Switch alignIndicator={"right"}
-                  label={`Setting Routing Key header is ${enabled ? "ENABLED" : "DISABLED"}`}
-                  onChange={e => handleEnabledChange(e.target.checked)} className={styles.switch}
-                  checked={enabled}/>
+          <Switch
+            alignIndicator={"right"}
+            label={`Setting Routing Key header is ${
+              enabled ? "ENABLED" : "DISABLED"
+            }`}
+            onChange={(e) => handleEnabledChange(e.target.checked)}
+            className={styles.switch}
+            checked={enabled}
+          />
         </div>
         {enabled ? (
           <div className={styles.mainPanel}>
@@ -95,10 +100,19 @@ const Frame = () => {
             </div>
             <div className={styles.routingKeyInput}>
               <div className={styles.label}>New value</div>
-              <div><input type="text" onChange={(e) => setUserInput(e.target.value)} size={32} value={userInput}/></div>
+              <div>
+                <input
+                  type="text"
+                  onChange={(e) => setUserInput(e.target.value)}
+                  size={32}
+                  value={userInput}
+                />
+              </div>
             </div>
             <div>
-              <Button onClick={() => saveRoutingKey()} intent={Intent.PRIMARY}>Update</Button>
+              <Button onClick={() => saveRoutingKey()} intent={Intent.PRIMARY}>
+                Update
+              </Button>
             </div>
           </div>
         ) : null}
