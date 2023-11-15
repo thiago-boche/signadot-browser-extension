@@ -75,7 +75,7 @@ async function updateDynamicRules() {
       .then(() => {
         // Adding console.log() to help with debugging (Should be fine to retain in published script)
         chrome.declarativeNetRequest.getDynamicRules().then((rules) => {
-          console.log(">> NEW DYNAMIC RULES: ", JSON.stringify(rules));
+          console.log(">> NEW DYNAMIC RULES: ", rules);
         });
       })
       .catch((error) => {

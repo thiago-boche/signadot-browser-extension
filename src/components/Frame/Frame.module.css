@@ -1,37 +1,5 @@
 @import "../../styles/colors.module.css";
 
-/* Reset default margin and padding */
-html, body {
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    background-color: var(--SIGNADOT-APP-BACKGROUND-COLOR);
-    margin: 0px;
-    min-width: 400px;
-}
-
-.topBar {
-    background-color: var(--SIGNADOT-APP-TOPBAR-COLOR);
-    text-transform: uppercase;
-    padding: 1rem;
-}
-
-.topBar .title {
-    font-size: 16px;
-    font-weight: 500;
-}
-
-.body {
-    padding: 1rem;
-}
-
-.logo {
-    height: 4rem;
-    padding: 0rem 1rem;
-}
-
 .switchPanel {
     padding: 10px 0px 0px 0px;
 }
@@ -67,4 +35,8 @@ html, body {
     padding: 0.5rem 1rem;
     color: white;
     font-size: 0.8rem;
+}
+
+.content {
+    min-height: 240px;
 }

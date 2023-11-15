@@ -1,0 +1,28 @@
+@import "../../styles/colors.module.css";
+
+.container {
+    background-color: white;
+    margin-top: 1rem;
+    border: 3px solid var(--SIGNADOT-BLUE300);
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+.type {
+    background-color: var(--SIGNADOT-BLUE200);
+    color: white;
+    padding: 0.25rem;
+    border-radius: 0.2rem;
+}

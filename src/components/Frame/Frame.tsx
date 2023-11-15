@@ -1,6 +1,10 @@
 import React, { useEffect } from "react";
 import styles from "./Frame.module.css";
-import { Button, Intent, Switch } from "@blueprintjs/core";
+import { Switch } from "@blueprintjs/core";
+import { RoutingEntity } from "../ListRouteEntries/types";
+import ListRouteEntries from "../ListRouteEntries";
+import { useFetchRoutingEntries } from "../ListRouteEntries/hooks";
+import PinnedRouteGroup from "../PinnedRouteGroup";
 
 const ROUTING_KEY = "routingKey";
 const ENABLED = "enabled";
@@ -13,55 +17,30 @@ interface StorageChange {
 }
 
 const Frame = () => {
-  const [userInput, setUserInput] = React.useState<string>("");
   const [enabled, setEnabled] = React.useState<boolean>(false);
-  const [status, setStatus] = React.useState<string | undefined>(undefined);
-  const [storageValue, setStorageValue] = React.useState<string>("");
+  const [debug, setDebug] = React.useState<boolean>(false);
 
-  // const logoImageUrl = chrome.runtime.getURL("images/signadot-full-logo.png");
-  const saveRoutingKey = () => {
-    chrome.storage.local.set(
-      {
-        [ROUTING_KEY]: userInput,
-      },
-      () => {
-        setUserInput("");
-        setStatus("Routing Key saved!");
-        // No need to return a function here, since we're not inside useEffect
-        setTimeout(() => {
-          setStatus("");
-        }, 1000);
-      }
-    );
-  };
+  const [storageValue, setStorageValue] = React.useState<string | undefined>(
+    undefined
+  );
 
   const handleEnabledChange = (enable: boolean) => {
     setEnabled(enable);
-    chrome.storage.local.set(
-      {
-        [ENABLED]: enable,
-      },
-      () => {
-        setStatus(enable ? "Feature enabled" : "Feature disabled");
-        // No need to return a function here, since we're not inside useEffect
-        setTimeout(() => {
-          setStatus("");
-        }, 1000);
-      }
-    );
+    chrome.storage.local.set({
+      [ENABLED]: enable,
+    });
   };
 
   useEffect(() => {
-    // Fetching from chrome.storage.local instead of chrome.storage.sync
     chrome.storage.local.get([ROUTING_KEY, ENABLED], (result) => {
-      if (result[ROUTING_KEY]) {
-        setStorageValue(result[ROUTING_KEY] || "");
+      if (ROUTING_KEY in result) {
+        setStorageValue(result?.[ROUTING_KEY] || "");
       }
       setEnabled(!!result[ENABLED]);
     });
 
     const handleStorageChange = (changes: StorageChange, area: string) => {
-      if (area === "local" && changes[ROUTING_KEY]) {
+      if (area === "local" && ROUTING_KEY in changes) {
         setStorageValue(changes[ROUTING_KEY].newValue || "");
       }
     };
@@ -73,51 +52,53 @@ const Frame = () => {
     return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
+  const routingEntities: RoutingEntity[] = useFetchRoutingEntries();
+  const [userSelectedEntity, setUserSelectedEntity] = React.useState<
+    RoutingEntity | undefined
+  >(undefined);
+  React.useEffect(() => {
+    chrome.storage.local.set({
+      [ROUTING_KEY]: userSelectedEntity?.routingKey,
+    });
+  }, [userSelectedEntity]);
+  const pinnedRoutingEntityData: RoutingEntity | undefined =
+    React.useMemo(() => {
+      const filteredList = routingEntities?.filter(
+        (entity) => entity.routingKey === storageValue
+      );
+      return filteredList?.[0];
+    }, [storageValue, routingEntities]);
+
   return (
-    <div className={styles.container}>
-      <div className={styles.topBar}>
-        {/*{imageUrl ? <img src={logoImageUrl} className={styles.logo} /> : "no image url"}*/}
-        <div className={styles.title}>Signadot</div>
+    <div>
+      <div className={styles.switchPanel}>
+        <Switch
+          alignIndicator={"right"}
+          label={`Setting Routing Key header is ${
+            enabled ? "ENABLED" : "DISABLED"
+          }`}
+          onChange={(e) => handleEnabledChange(e.target.checked)}
+          className={styles.switch}
+          checked={enabled}
+        />
       </div>
-      <div className={styles.body}>
-        <div className={styles.switchPanel}>
-          <Switch
-            alignIndicator={"right"}
-            label={`Setting Routing Key header is ${
-              enabled ? "ENABLED" : "DISABLED"
-            }`}
-            onChange={(e) => handleEnabledChange(e.target.checked)}
-            className={styles.switch}
-            checked={enabled}
-          />
+      {debug && (
+        <div>
+          <div>Selected entity: {JSON.stringify(userSelectedEntity)}</div>
+          <div>Stored Value: {storageValue}</div>
         </div>
-        {enabled ? (
-          <div className={styles.mainPanel}>
-            <h3>Routing Key</h3>
-            <div className={styles.routingKeyInput}>
-              <div className={styles.label}>Current value</div>
-              <div>{storageValue}</div>
-            </div>
-            <div className={styles.routingKeyInput}>
-              <div className={styles.label}>New value</div>
-              <div>
-                <input
-                  type="text"
-                  onChange={(e) => setUserInput(e.target.value)}
-                  size={32}
-                  value={userInput}
-                />
-              </div>
-            </div>
-            <div>
-              <Button onClick={() => saveRoutingKey()} intent={Intent.PRIMARY}>
-                Update
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-      {status && <div className={styles.status}>{status}</div>}
+      )}
+      {enabled && (
+        <div className={styles.content}>
+          <ListRouteEntries
+            routingEntities={routingEntities}
+            setUserSelectedRoutingEntity={setUserSelectedEntity}
+          />
+          {pinnedRoutingEntityData && (
+            <PinnedRouteGroup routingEntity={pinnedRoutingEntityData} />
+          )}
+        </div>
+      )}
     </div>
   );
 };
