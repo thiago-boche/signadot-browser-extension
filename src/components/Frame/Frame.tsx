@@ -39,6 +39,7 @@ const Frame = () => {
             </div>
             {debug && (
                 <div>
+                    <div>Enabled: {enabled ? "true": "false"}</div>
                     <div>Selected entity: {JSON.stringify(userSelectedEntity)}</div>
                     <div>Stored RoutingKey: {routingKey}</div>
                 </div>
