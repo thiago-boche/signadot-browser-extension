@@ -1,7 +1,5 @@
 // background.ts
 
-type HeaderOperation = "append" | "set" | "remove" | "removeIfEmpty";
-
 const ROUTING_KEY = "routingKey";
 const ENABLED_KEY = "enabled";
 const ROUTING_HEADER_KEYS: string[] = [
@@ -161,3 +159,4 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 debug("outside");
+updateInMemoryValues();
