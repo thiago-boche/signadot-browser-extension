@@ -1,0 +1,35 @@
+@import "../../styles/colors.module.css";
+
+/* Reset default margin and padding */
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--SIGNADOT-APP-BACKGROUND-COLOR);
+}
+
+.container {
+    margin: 0px;
+    min-width: 480px;
+}
+
+.topBar {
+    background-color: var(--SIGNADOT-APP-TOPBAR-COLOR);
+    text-transform: uppercase;
+    padding: 1rem;
+}
+
+.topBar .title {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.body {
+    padding: 1rem;
+}
+
+.status {
+    background-color: var(--SIGNADOT-GREEN700);
+    padding: 0.5rem 1rem;
+    color: white;
+    font-size: 0.8rem;
+}

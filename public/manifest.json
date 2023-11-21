@@ -25,7 +25,8 @@
     "storage",
     "declarativeNetRequest",
     "declarativeNetRequestFeedback",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequestWithHostAccess",
+    "cookies"
   ],
 
   "host_permissions": [
