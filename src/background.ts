@@ -2,26 +2,20 @@
 
 const ROUTING_KEY = "routingKey";
 const ENABLED_KEY = "enabled";
-const ROUTING_HEADER_KEYS: string[] = [
-  "uberctx-sd-workspace",
-  "uberctx-sd-sandbox",
-  "uberctx-sd-routing-key",
-  "uberctx-sd-request-id",
-  "ot-baggage-sd-workspace",
-  "ot-baggage-sd-sandbox",
-  "ot-baggage-sd-routing-key",
-  "ot-baggage-sd-request-id",
-  "baggage",
-  "sd-workspace",
-  "sd-sandbox",
-  "sd-routing-key",
-  "sd-request-id",
-  "tracestate",
-  "sd-workspace",
-  "sd-sandbox",
-  "sd-routing-key",
-  "sd-request-id",
-];
+const ROUTING_KEY_PLACEHOLDER = `{${ROUTING_KEY}}`;
+const ROUTING_HEADERS: Record<string, string> = {
+  "Baggage": `sd-routing-key=${ROUTING_KEY_PLACEHOLDER}`,
+  "Ot-Baggage-Sd-Routing-Key": `${ROUTING_KEY_PLACEHOLDER}`,
+  "Ot-Baggage-Sd-Sandbox": `${ROUTING_KEY_PLACEHOLDER}`,
+  "Ot-Baggage-Sd-Workspace": `${ROUTING_KEY_PLACEHOLDER}`,
+  "Tracestate": `sd-routing-key=${ROUTING_KEY_PLACEHOLDER}`,
+  "Uberctx-Sd-Routing-Key": `${ROUTING_KEY_PLACEHOLDER}`,
+  "Uberctx-Sd-Sandbox": `${ROUTING_KEY_PLACEHOLDER}`,
+  "Uberctx-Sd-Workspace": `${ROUTING_KEY_PLACEHOLDER}`,
+  "sd-workspace": `${ROUTING_KEY_PLACEHOLDER}`,
+  "sd-sandbox": `${ROUTING_KEY_PLACEHOLDER}`,
+  "sd-routing-key": `${ROUTING_KEY_PLACEHOLDER}`,
+};
 const ResourceType = chrome.declarativeNetRequest.ResourceType;
 const MODIFY_HEADER_IN_RESOURCE_TYPES: string[] = [
   ResourceType.MAIN_FRAME,
@@ -42,11 +36,16 @@ const MODIFY_HEADER_IN_RESOURCE_TYPES: string[] = [
 let inMemoryHeaderValue: string | undefined = undefined;
 let inMemoryFeatureEnabled: boolean = false;
 
+const populateRoutingKey = (input: string, routingKey: string): string => {
+  const regex = new RegExp(ROUTING_KEY_PLACEHOLDER, 'g');
+  return input.replace(regex, routingKey);
+}
+
 const getRules = (
-    headerKeys: string[],
-    value: string
+    headerKeys: Record<string, string>,
+    routingKey: string
 ): chrome.declarativeNetRequest.Rule[] =>
-    headerKeys.map(
+    Object.keys(headerKeys).map(
         (key, idx) =>
             ({
               id: idx + 1,
@@ -57,7 +56,7 @@ const getRules = (
                   {
                     header: key,
                     operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                    value: value,
+                    value: populateRoutingKey(headerKeys[key], routingKey),
                   },
                 ],
               },
@@ -74,7 +73,7 @@ const getCurrentRuleIDs = (
 
 async function updateDynamicRules() {
   if (inMemoryFeatureEnabled) {
-    const rules = getRules(ROUTING_HEADER_KEYS, inMemoryHeaderValue || "");
+    const rules = getRules(ROUTING_HEADERS, inMemoryHeaderValue || "");
     // Update the dynamic rules
     chrome.declarativeNetRequest
         .updateDynamicRules({
