@@ -1,7 +1,7 @@
 type PostAuthCallbackFn = (authenticated: boolean) => void;
 const AUTH_SESSION_COOKIE_NAME = "signadot-auth";
 const DUMMY_PREVIEW_ENDPOINT =
-  "https://dummy-preview-endpoint.preview.signadot.com";
+    "https://dummy-preview-endpoint.preview.signadot.com";
 const SIGNADOT_API_DOMAIN = "https://api.signadot.com";
 
 const refreshPreviewDomainCookies = () => {
@@ -21,35 +21,20 @@ export const auth = (callback: PostAuthCallbackFn) => {
 
   // Get auth session cookie from preview subdomain.
   chrome.cookies.get(
-    { url: DUMMY_PREVIEW_ENDPOINT, name: AUTH_SESSION_COOKIE_NAME },
-    function (cookie) {
-      if (cookie) {
-        chrome.cookies.set(
-          {
-            url: SIGNADOT_API_DOMAIN,
-            name: AUTH_SESSION_COOKIE_NAME,
-            value: cookie.value,
-          }
-          /*
-                                function (cookie) {
-                                    if (cookie) {
-                                        console.log(
-                                            "applied cookie value. Cookie value: ",
-                                            JSON.stringify(cookie)
-                                        );
-                                    } else {
-                                        console.log(
-                                            "Can't get cookie that we just set ! Check the name and URL."
-                                        );
-                                    }
-                                }
-                */
-        );
-
-        callback(true);
-      } else {
-        callback(false);
+      {url: DUMMY_PREVIEW_ENDPOINT, name: AUTH_SESSION_COOKIE_NAME},
+      function (cookie) {
+        if (cookie) {
+          chrome.cookies.set(
+              {
+                url: SIGNADOT_API_DOMAIN,
+                name: AUTH_SESSION_COOKIE_NAME,
+                value: cookie.value,
+              }
+          );
+          callback(true);
+        } else {
+          callback(false);
+        }
       }
-    }
   );
 };
