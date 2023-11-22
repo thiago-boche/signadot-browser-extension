@@ -16,7 +16,7 @@ const Layout: React.FC<Props> = ({children}) => {
         <div className={styles.topBar}>
           <div><img src={logoPath} height={80}/></div>
           <div>
-            <Tooltip content={`Sandbox Header ${enabled ? "Enabled" : "Disabled"}`}>
+            <Tooltip content={`Header injection ${enabled ? "Enabled" : "Disabled"}`}>
               <Switch
                   alignIndicator={"right"}
                   onChange={(e) => setEnabledFn(e.target.checked)}
