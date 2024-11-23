@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import StorageChange = chrome.storage.StorageChange;
 
 enum StorageKey {
@@ -29,6 +29,7 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
           setEnabled(!!result[StorageKey.Enabled]);
         });
 
+
         // Update values for RoutingKey and enabled when the value in Google (Local) storage changes.
         const handleStorageChange = (changes: { [p: string]: StorageChange }, area: string) => {
           if (area === "local") {
@@ -48,6 +49,22 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
         return () => chrome.storage.onChanged.removeListener(handleStorageChange);
       }, []
   )
+
+    React.useEffect(() => {
+        if (!enabled) {
+            chrome.action.setIcon({ path: {
+                    "16": "images/icons/icon16_inactive.png",
+                    "48": "images/icons/icon48_inactive.png",
+                    "128": "images/icons/icon128_inactive.png"
+                }});
+        } else {
+            chrome.action.setIcon({ path: {
+                    "16": "images/icons/icon16_active.png",
+                    "48": "images/icons/icon48_active.png",
+                    "128": "images/icons/icon128_active.png"
+                }});
+        }
+    }, [enabled]);
 
   return [routingKey, setRoutingKeyFn, enabled, setEnabledFn];
 }
