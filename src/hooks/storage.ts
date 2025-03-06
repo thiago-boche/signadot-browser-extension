@@ -1,12 +1,14 @@
 import React from "react";
 import StorageChange = chrome.storage.StorageChange;
 import { getHeaders, Header } from "../service-worker";
-import { DEFAULT_API_URL, DEFAULT_PREVIEW_URL, DEFAULT_DASHBOARD_URL } from "../components/Settings/Settings";
+import { DEFAULT_API_URL, DEFAULT_PREVIEW_URL, DEFAULT_DASHBOARD_URL, DEFAULT_TRACEPARENT_HEADER } from "../components/Settings/Settings";
 
 export enum StorageKey {
   RoutingKey = "routingKey",
   Enabled = "enabled",
   ExtraHeaders = "extraHeaders",
+  TraceparentHeader = "traceparentHeader",
+  TraceparentHeaderEnabled = "traceparentHeaderEnabled",
   InjectedHeaders = "injectedHeaders",
   ApiUrl = "apiUrl",
   PreviewUrl = "previewUrl",
@@ -21,6 +23,10 @@ type ChromeStorageHookOutput = {
   setRoutingKeyFn: ((value: (string | undefined)) => Promise<void>),
   extraHeaders: string[] | undefined,
   setExtraHeaders: ((value: string[] | null) => Promise<void>),
+  traceparentHeader: (string | undefined),
+  setTraceparentHeader: ((value: string) => Promise<void>),
+  traceparentHeaderEnabled: boolean,
+  setTraceparentHeaderEnabled: (value: boolean) => void,
   injectedHeaders: Record<string, Header> | undefined,
   apiUrl: string | undefined,
   previewUrl: string | undefined,
@@ -36,10 +42,12 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
   const [enabled, setEnabled] = React.useState<boolean>(true);
   const [routingKey, setRoutingKey] = React.useState<string | undefined>(undefined);
   const [extraHeaders, setExtraHeaders] = React.useState<string[] | undefined>(undefined);
+  const [traceparentHeader, setTraceparentHeader] = React.useState<string>(DEFAULT_TRACEPARENT_HEADER);
   const [injectedHeaders, setInjectedHeaders] = React.useState<Record<string, Header> | undefined>(undefined);
   const [apiUrl, setApiUrl] = React.useState<string | undefined>(undefined);
   const [previewUrl, setPreviewUrl] = React.useState<string | undefined>(undefined);
   const [dashboardUrl, setDashboardUrl] = React.useState<string | undefined>(undefined);
+  const [traceparentHeaderEnabled, setTraceparentHeaderEnabled] = React.useState(false);
 
   const setRoutingKeyFn = (value: string | undefined): Promise<void> => {
     if (value) {
@@ -49,6 +57,9 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
     }
   }
   const setEnabledFn = (value: boolean) => chrome.storage.local.set({[StorageKey.Enabled]: value})
+  const setTraceparentHeaderEnabledFn = (value: boolean) => {
+    chrome.storage.local.set({[StorageKey.TraceparentHeaderEnabled]: value})
+  }
   const setExtraHeadersFn = (value: string[] | null) => {
     if (value) {
       return chrome.storage.local.set({[StorageKey.ExtraHeaders]: value})
@@ -56,13 +67,17 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
       return chrome.storage.local.remove(StorageKey.ExtraHeaders)
     }
   }
+  const setTraceparentHeaderFn = (value: string) => {
+    return chrome.storage.local.set({[StorageKey.TraceparentHeader]: value})
+  }
   const setApiUrlFn = (value: string) => chrome.storage.local.set({[StorageKey.ApiUrl]: value})
   const setPreviewUrlFn = (value: string) => chrome.storage.local.set({[StorageKey.PreviewUrl]: value})
   const setDashboardUrlFn = (value: string) => chrome.storage.local.set({[StorageKey.DashboardUrl]: value})
 
   React.useEffect(() => {
-    setInjectedHeaders(getHeaders(extraHeaders));
-  }, [extraHeaders]);
+    const headers = getHeaders(extraHeaders, traceparentHeaderEnabled ? traceparentHeader : undefined);
+    setInjectedHeaders(headers);
+  }, [extraHeaders, traceparentHeader, traceparentHeaderEnabled]);
 
   React.useEffect(() => {
     chrome.storage.local.get([StorageKey.ApiUrl, StorageKey.PreviewUrl, StorageKey.DashboardUrl], (result) => {
@@ -94,13 +109,20 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
 
   React.useEffect(() => {
         // Populate value for routingKey and enabled from Chrome Storage.
-        chrome.storage.local.get([StorageKey.RoutingKey, StorageKey.Enabled, StorageKey.ExtraHeaders, StorageKey.ApiUrl, StorageKey.PreviewUrl, StorageKey.DashboardUrl], (result) => {
+        chrome.storage.local.get([StorageKey.RoutingKey, StorageKey.Enabled, StorageKey.ExtraHeaders, StorageKey.TraceparentHeader, StorageKey.ApiUrl, StorageKey.PreviewUrl, StorageKey.DashboardUrl, StorageKey.TraceparentHeaderEnabled], (result) => {
           setEnabled(!!result[StorageKey.Enabled]);
+
           if (StorageKey.RoutingKey in result) {
             setRoutingKey(result?.[StorageKey.RoutingKey]);
           }
           if (StorageKey.ExtraHeaders in result) {
             setExtraHeaders(result[StorageKey.ExtraHeaders]);
+          }
+	      if (StorageKey.TraceparentHeader in result) {
+            setTraceparentHeader(result[StorageKey.TraceparentHeader]);
+          }
+          if (StorageKey.TraceparentHeaderEnabled in result) {
+            setTraceparentHeaderEnabled(!!result[StorageKey.TraceparentHeaderEnabled]);
           }
           if (StorageKey.InjectedHeaders in result) {
             setInjectedHeaders(result[StorageKey.InjectedHeaders]);
@@ -119,6 +141,7 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
 
         // Update values for RoutingKey and enabled when the value in Google (Local) storage changes.
         const handleStorageChange = (changes: { [p: string]: StorageChange }, area: string) => {
+
           if (area === "local") {
             if (StorageKey.Enabled in changes) {
               setEnabled(!!changes[StorageKey.Enabled].newValue);
@@ -128,6 +151,12 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
             }
             if (StorageKey.ExtraHeaders in changes) {
               setExtraHeaders(changes[StorageKey.ExtraHeaders].newValue);
+            }
+            if (StorageKey.TraceparentHeader in changes) {
+              setTraceparentHeader(changes[StorageKey.TraceparentHeader].newValue);
+            }
+            if (StorageKey.TraceparentHeaderEnabled in changes) {
+              setTraceparentHeaderEnabled(!!changes[StorageKey.TraceparentHeaderEnabled].newValue);
             }
             if (StorageKey.InjectedHeaders in changes) {
               setInjectedHeaders(changes[StorageKey.InjectedHeaders].newValue);
@@ -176,6 +205,10 @@ export const useChromeStorage = (): ChromeStorageHookOutput => {
     setRoutingKeyFn,
     extraHeaders,
     setExtraHeaders: setExtraHeadersFn,
+    traceparentHeader,
+    setTraceparentHeader: setTraceparentHeaderFn,
+    traceparentHeaderEnabled,
+    setTraceparentHeaderEnabled: setTraceparentHeaderEnabledFn,
     injectedHeaders,
     apiUrl,
     previewUrl,

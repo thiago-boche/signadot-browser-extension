@@ -2,12 +2,12 @@
 
 import {auth} from "./contexts/auth";
 import { StorageKey } from "./hooks/storage";
+import { DEFAULT_TRACEPARENT_HEADER } from "./components/Settings/Settings";
 // import {getClusters} from "./components/ListRouteEntries/queries";
 
 export type Header = { value: string, kind: 'always' | 'extra' | 'defaultBeforeV191' }
 
 const ROUTING_KEY = "routingKey";
-const ENABLED_KEY = "enabled";
 const ROUTING_KEY_PLACEHOLDER = `{${ROUTING_KEY}}`;
 export const ROUTING_HEADERS: Record<string, Header> = {
   "baggage": { value: `sd-routing-key=${ROUTING_KEY_PLACEHOLDER},sd-sandbox=${ROUTING_KEY_PLACEHOLDER}`, kind: 'always' },
@@ -39,17 +39,20 @@ const populateRoutingKey = (input: string, routingKey: string): string => {
   return input.replace(regex, routingKey);
 }
 
-export const getHeaders = (extraHeaders: string[] | undefined): Record<string, Header> => {
+
+export const getHeaders = (extraHeaders: string[] | undefined, traceparentHeader: string | undefined): Record<string, Header> => {
+
+  const traceparentMap: Record<string, Header> = traceparentHeader ? { "traceparent": {value: traceparentHeader, kind: "always" }} : {};
 
   // This means cluster is using an old operator version
   if (!extraHeaders) {
     return Object.entries(ROUTING_HEADERS)
-        .reduce((acc, [key, header]) => ({ ...acc, [key]: header }), {});
+        .reduce((acc, [key, header]) => ({ ...acc, [key]: header }), traceparentMap);
   }
 
   const defaultHeaders = Object.entries(ROUTING_HEADERS)
       .filter(([_, header]) => header.kind === "always")
-      .reduce((acc, [key, header]) => ({ ...acc, [key]: header }), {});
+      .reduce((acc, [key, header]) => ({ ...acc, [key]: header }), traceparentMap);
 
   const extraHeadersObj = extraHeaders.reduce((acc, header) => ({ ...acc, [header]: { value: `${ROUTING_KEY_PLACEHOLDER}`, kind: "extra" } }), {});
 
@@ -60,8 +63,9 @@ export const getHeaders = (extraHeaders: string[] | undefined): Record<string, H
 const getRules = (
   headerKeys: Record<string, Header>,
   routingKey: string
-): chrome.declarativeNetRequest.Rule[] =>
-  Object.keys(headerKeys).map(
+): chrome.declarativeNetRequest.Rule[] => {
+	  	
+  return Object.keys(headerKeys).map(
     (key, idx) => ({
       id: idx + 1,
       priority: 1,
@@ -82,17 +86,19 @@ const getRules = (
       },
     } as chrome.declarativeNetRequest.Rule)
   );
-
+}
 
 async function updateDynamicRules() {
-  chrome.storage.local.get([StorageKey.RoutingKey, StorageKey.Enabled, StorageKey.ExtraHeaders], async (result) => {
+  chrome.storage.local.get([StorageKey.RoutingKey, StorageKey.Enabled, StorageKey.ExtraHeaders, StorageKey.TraceparentHeader], async (result) => {
     const currentRoutingKey = result[StorageKey.RoutingKey];
     const currentFeatureEnabled = !!result[StorageKey.Enabled];
     const currentExtraHeaders = result[StorageKey.ExtraHeaders];
+    const currentTraceparentHeader = result[StorageKey.TraceparentHeader];
 
     if (currentFeatureEnabled && currentRoutingKey) {
       try {
-        const headerKeys = getHeaders(currentExtraHeaders);
+        const traceparentHeader = currentTraceparentHeader === undefined ? DEFAULT_TRACEPARENT_HEADER : currentTraceparentHeader;
+        const headerKeys = getHeaders(currentExtraHeaders, traceparentHeader);
         const rules = getRules(headerKeys, currentRoutingKey);
         const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
 
@@ -125,7 +131,7 @@ async function updateDynamicRules() {
 chrome.runtime.onInstalled.addListener(updateDynamicRules);
 chrome.runtime.onStartup.addListener(updateDynamicRules);
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && (changes[ROUTING_KEY] || changes[ENABLED_KEY])) {
+  if (areaName === "local" && (changes[StorageKey.RoutingKey] || changes[StorageKey.Enabled] || changes[StorageKey.TraceparentHeader])) {
     updateDynamicRules();
   }
 });
