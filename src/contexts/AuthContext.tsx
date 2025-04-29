@@ -1,7 +1,7 @@
-import React, {createContext, useContext, useState} from "react";
-import {auth} from "./auth";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { auth } from "./auth";
 import Layout from "../components/Layout/Layout";
-import { useChromeStorage } from "../hooks/storage";
+import { useStorage } from "./StorageContext/StorageContext";
 
 const loadingIconPath = chrome.runtime.getURL("images/loading.gif");
 
@@ -23,6 +23,7 @@ interface AuthState {
 // Define the shape of the context
 interface AuthContextType {
   authState?: AuthState;
+  isLoading: boolean;
 }
 
 interface GetOrgsResponse {
@@ -46,70 +47,78 @@ interface GetOrgsResponse {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // AuthProvider component
-export const AuthProvider: React.FC<Props> = ({children}) => {
+export const AuthProvider: React.FC<Props> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState | undefined>(undefined);
-  const [authenticated, setAuthenticated] = React.useState<boolean | undefined>(undefined);
-  const { apiUrl, previewUrl } = useChromeStorage();
+  const [authenticated, setAuthenticated] = useState<boolean | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
+  const { settings, setIsAuthenticated } = useStorage();
+  const { apiUrl, previewUrl } = settings.signadotUrls;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!apiUrl || !previewUrl) return;
 
-    auth(async (authenticated) => {
-      if (!authenticated) {
-        console.log("Not authenticated!");
-        setAuthenticated(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${apiUrl}/api/v1/orgs`);
-        
-        if (response.status === 401 || !response.ok) {
+    auth(
+      async (authenticated) => {
+        if (!authenticated) {
+          console.log("Not authenticated!");
           setAuthenticated(false);
+          setIsLoading(false);
           return;
         }
 
-        const data: GetOrgsResponse = await response.json();
-        
-        // Ensure we have orgs before accessing first item
-        if (!data.orgs?.length) {
-          throw new Error("No organizations found");
-        }
+        try {
+          const response = await fetch(`${apiUrl}/api/v1/orgs`);
 
-        setAuthState({
-          org: data.orgs[0],
-          user: {
-            firstName: data.user.firstName?.String,
-            lastName: data.user.lastName?.String,
-          },
-        });
-        
-        setAuthenticated(true);
-      } catch (error) {
-        console.error("Error fetching org:", error);
-        setAuthenticated(false);
-      }
-    }, { apiUrl, previewUrl });
+          if (response.status === 401 || !response.ok) {
+            setAuthenticated(false);
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            return;
+          }
+
+          const data: GetOrgsResponse = await response.json();
+
+          // Ensure we have orgs before accessing first item
+          if (!data.orgs?.length) {
+            throw new Error("No organizations found");
+          }
+
+          setAuthState({
+            org: data.orgs[0],
+            user: {
+              firstName: data.user.firstName?.String,
+              lastName: data.user.lastName?.String,
+            },
+          });
+
+          setAuthenticated(true);
+          setIsAuthenticated(true);
+          setIsLoading(false);
+        } catch (error) {
+          console.error("Error fetching org:", error);
+          setAuthenticated(false);
+          setIsAuthenticated(false);
+          setIsLoading(false);
+        }
+      },
+      { apiUrl, previewUrl },
+    );
   }, [apiUrl, previewUrl]);
 
-  if (authenticated === undefined) {
-    return (
-        <Layout>
-          <div><img src={loadingIconPath}/></div>
-        </Layout>
-    );
-  } else if (!authState) {
-    return (
-        <Layout>
-          <div>Please <a href={previewUrl} target="_blank">Login to Signadot</a> to continue.</div>
-        </Layout>
-    );
-  }
+  useEffect(() => {
+    if (authState === undefined) {
+      setIsAuthenticated(false);
+    }
+
+    if (authState) {
+      setIsAuthenticated(true);
+    }
+  }, [authState]);
 
   return (
-      <AuthContext.Provider value={{authState}}>
-        <Layout>{children}</Layout>
-      </AuthContext.Provider>
+    <AuthContext.Provider value={{ authState, isLoading }}>
+      <Layout>{children}</Layout>
+    </AuthContext.Provider>
   );
 };
 

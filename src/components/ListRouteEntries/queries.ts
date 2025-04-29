@@ -1,12 +1,10 @@
-import {Cluster, RoutingEntity} from "./types";
-import {getApiUrl} from "../Settings/api";
+import { Cluster, RoutingEntity } from "./types";
+import { getApiUrl } from "../Settings/api";
 
 // These function assumes the user is authenticated, otherwise we wouldn't have
 // an org name (and note that on popup open, we are reloading the auth)
 
-export const fetchSandboxes = async (
-    orgName?: string
-): Promise<RoutingEntity[]> => {
+export const fetchSandboxes = async (orgName?: string): Promise<RoutingEntity[]> => {
   return new Promise(async (resolve, reject) => {
     getApiUrl().then((apiUrl: string) => {
       fetch(`${apiUrl}/api/v2/orgs/${orgName}/sandboxes`)
@@ -22,9 +20,7 @@ export const fetchSandboxes = async (
   });
 };
 
-export const fetchRouteGroups = async (
-    orgName?: string
-): Promise<RoutingEntity[]> => {
+export const fetchRouteGroups = async (orgName?: string): Promise<RoutingEntity[]> => {
   return new Promise(async (resolve, reject) => {
     getApiUrl().then((apiUrl: string) => {
       fetch(`${apiUrl}/api/v2/orgs/${orgName}/routegroups`)
@@ -40,20 +36,18 @@ export const fetchRouteGroups = async (
   });
 };
 
-export const fetchClusters = async (
-    orgName: string
-): Promise<Cluster[]> => {
-    return new Promise(async (resolve, reject) => {
-      getApiUrl().then((apiUrl: string) => {
-        fetch(`${apiUrl}/api/v2/orgs/${orgName}/clusters`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Failed to fetch clusters");
-                }
-                return response.json();
-            })
-            .then((data) => resolve(data))
-            .catch((error) => reject(error));
-      });
+export const fetchClusters = async (orgName: string): Promise<Cluster[]> => {
+  return new Promise(async (resolve, reject) => {
+    getApiUrl().then((apiUrl: string) => {
+      fetch(`${apiUrl}/api/v2/orgs/${orgName}/clusters`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to fetch clusters");
+          }
+          return response.json();
+        })
+        .then((data) => resolve(data))
+        .catch((error) => reject(error));
     });
+  });
 };

@@ -1,89 +1,84 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import styles from "./Frame.module.css";
-import {RoutingEntity} from "../ListRouteEntries/types";
+import { RoutingEntity } from "../ListRouteEntries/types";
 import ListRouteEntries from "../ListRouteEntries";
-import {useFetchRoutingEntries} from "../ListRouteEntries/hooks";
+import { useFetchRoutingEntries } from "../ListRouteEntries/hooks";
 import PinnedRouteGroup from "../PinnedRouteGroup";
-import {useChromeStorage} from "../../hooks/storage";
-import {Section, SectionCard} from "@blueprintjs/core";
+import { Section, SectionCard } from "@blueprintjs/core";
 import Footer from "../Footer";
 import Settings from "../Settings/Settings";
-import {useAuth} from "../../contexts/AuthContext";
-import {useRouteView} from "../../contexts/RouteViewContext/RouteViewContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useRouteView } from "../../contexts/RouteViewContext/RouteViewContext";
+import { useStorage } from "../../contexts/StorageContext/StorageContext";
+import { Route } from "../Route";
+import { ProtectedRoute } from "../ProtectedRoute";
+
+const Login = () => {
+  const { settings } = useStorage();
+  const { previewUrl } = settings.signadotUrls;
+
+  return (
+    <div>
+      Please{" "}
+      <a href={previewUrl} target="_blank">
+        Login to Signadot
+      </a>{" "}
+      to continue.
+    </div>
+  );
+};
+
+const Loading = () => {
+  return <div>Loading...</div>;
+};
+
+const Home = () => {
+  const { currentRoutingKey, setCurrentRoutingKey } = useStorage();
+  const routingEntities: RoutingEntity[] = useFetchRoutingEntries();
+  const { authState } = useAuth();
+
+  const pinnedRoutingEntityData: RoutingEntity | undefined = useMemo(() => {
+    const filteredList = routingEntities?.filter((entity) => entity.routingKey === currentRoutingKey);
+    return filteredList?.[0];
+  }, [currentRoutingKey, routingEntities]);
+
+  return (
+    <>
+      {pinnedRoutingEntityData && (
+        <PinnedRouteGroup routingEntity={pinnedRoutingEntityData} onRemove={() => setCurrentRoutingKey(undefined)} />
+      )}
+      <ListRouteEntries
+        routingEntities={routingEntities}
+        setUserSelectedRoutingEntity={(e) => setCurrentRoutingKey(e.routingKey)}
+        orgName={authState?.org.name}
+      />
+      <Footer />
+    </>
+  );
+};
 
 const Frame = () => {
-    const [debug, setDebug] = React.useState<boolean>(false);
-    const {routingKey, setRoutingKeyFn, enabled, extraHeaders} = useChromeStorage();
-    const routingEntities: RoutingEntity[] = useFetchRoutingEntries();
-    const [userSelectedEntity, setUserSelectedEntity] = React.useState<RoutingEntity | undefined>(undefined);
-    const {currentView, setCurrentView} = useRouteView();
+  const { authState, isLoading } = useAuth();
+  const { goToView } = useRouteView();
 
-    const {authState} = useAuth();
+  useEffect(() => {
+    if (isLoading) {
+      goToView("loading");
+    } else if (authState) {
+      goToView("home");
+    } else {
+      goToView("login");
+    }
+  }, [authState, isLoading]);
 
-
-    React.useEffect(() => {
-        if (userSelectedEntity) {
-            setRoutingKeyFn(userSelectedEntity.routingKey)
-        }
-    }, [userSelectedEntity]);
-    const pinnedRoutingEntityData: RoutingEntity | undefined =
-        React.useMemo(() => {
-            const filteredList = routingEntities?.filter(
-                (entity) => entity.routingKey === routingKey
-            );
-            return filteredList?.[0];
-        }, [routingKey, routingEntities]);
-
-    return (
-        <div>
-            {debug && (
-                <div>
-                    <div>Enabled: {enabled ? "true" : "false"}</div>
-                    <div>Selected entity: {JSON.stringify(userSelectedEntity)}</div>
-                    <div>Stored RoutingKey: {routingKey}</div>
-                </div>
-            )}
-            {enabled && (
-                <div className={styles.content}>
-                    {currentView === "settings" ? (
-                        <Settings onClose={() => setCurrentView("home")}/>
-                    ) : (
-                        <div className={styles.home}>
-                            <div>
-                                <ListRouteEntries
-                                    orgName={authState?.org.name}
-                                    routingEntities={routingEntities}
-                                    setUserSelectedRoutingEntity={setUserSelectedEntity}
-                                />
-                                {pinnedRoutingEntityData ? (
-                                    <Section
-                                        compact
-                                        className={styles.pinned}
-                                    >
-                                        <SectionCard>
-                                            Headers are being set for:
-                                            <PinnedRouteGroup routingEntity={pinnedRoutingEntityData} onRemove={() => {
-                                                setUserSelectedEntity(undefined);
-                                                setRoutingKeyFn(undefined);
-                                            }}/>
-                                        </SectionCard>
-                                    </Section>
-                                ) : <Section
-                                    compact
-                                    className={styles.pinned}
-                                >
-                                    <SectionCard>
-                                        No Sandbox or RouteGroup selected
-                                    </SectionCard>
-                                </Section>}
-                            </div>
-                            <Footer/>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
+  return (
+    <div className={styles.container}>
+      <Route view="loading" component={Loading} />
+      <Route view="login" component={Login} />
+      <ProtectedRoute view="home" component={Home} fallbackView="login" />
+      <Route view="settings" component={<Settings onClose={() => goToView("home")} />} />
+    </div>
+  );
 };
 
 export default Frame;
