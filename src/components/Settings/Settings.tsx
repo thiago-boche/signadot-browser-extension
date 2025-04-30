@@ -10,8 +10,6 @@ import {
   DEFAULT_TRACEPARENT_VALUE,
 } from "../../contexts/StorageContext/defaults";
 
-const AUTH_SESSION_COOKIE_NAME = "signadot-auth";
-
 interface SettingsProps {
   onClose: () => void;
 }
@@ -34,10 +32,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   });
 
   const { settings, traceparent, setSettings, setTraceparent } = useStorage();
-
   const [isExtraSettingsOpen, setIsExtraSettingsOpen] = React.useState(false);
 
-  // Use the hook to handle Ctrl+Shift+U
   useHotkeys("ctrl+shift+u", () => setIsExtraSettingsOpen(!isExtraSettingsOpen), {
     enableOnFormTags: true,
     preventDefault: true,
@@ -70,47 +66,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     });
 
     setTraceparent(unsavedValues.traceparentHeaderEnabled, unsavedValues.traceparentHeader);
-
-    // TODO: This has been disabled because we are using the storage context to save the settings, however
-    // part of this logic have to be checked after issue#51 is merged
-    // chrome.storage.local.set({
-    //     apiUrl: cleanApiUrl,
-    //     previewUrl: cleanPreviewUrl,
-    //     dashboardUrl: cleanDashboardUrl,
-    //     traceparentHeader: temporaryValues.traceparentHeader,
-    //     traceparentHeaderEnabled: temporaryValues.traceparentHeaderEnabled,
-    //     debugMode: temporaryValues.debugMode,
-    // }, () => {
-    //     // After saving, update the cookie for the new domain
-    //     chrome.cookies.get(
-    //         {url: cleanPreviewUrl, name: AUTH_SESSION_COOKIE_NAME},
-    //         function (cookie) {
-    //             if (cookie) {
-    //                 // Set the cookie for the new API domain
-    //                 chrome.cookies.set(
-    //                     {
-    //                         url: cleanApiUrl,
-    //                         name: AUTH_SESSION_COOKIE_NAME,
-    //                         value: cookie.value,
-    //                     },
-    //                     () => {
-    //                         // Re-authenticate with the new API URL
-    //                         auth((authenticated) => {
-    //                             if (authenticated) {
-    //                                 alert('Settings saved and authenticated successfully!');
-    //                             } else {
-    //                                 alert('Settings saved but authentication failed. Please check your API URL and ensure you are logged in.');
-    //                             }
-    //                         });
-    //                     }
-    //                 );
-    //             } else {
-    //                 alert('Settings saved but no authentication cookie found. Please log in to Signadot first.');
-    //             }
-    //         }
-    //     );
-    // });
-
     onClose();
   };
 
@@ -136,19 +91,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
             large={false}
           />
           <label htmlFor="traceparentEnabled">Enable Traceparent</label>
-        </div>
-        <div className={styles.traceparent}>
-          <Switch
-            onChange={(e) =>
-              setUnsavedValues({
-                ...unsavedValues,
-                debugMode: e.target.checked,
-              })
-            }
-            checked={unsavedValues.debugMode}
-            large={false}
-          />
-          <label htmlFor="debugEnabled">Debug Mode</label>
         </div>
         <div className={styles.formGroup}>
           <label htmlFor="traceparentHeader">Traceparent Header Value:</label>
@@ -226,14 +168,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       </div>
     </div>
   );
-};
-
-export const getApiUrl = async (): Promise<string> => {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(["apiUrl"], (result) => {
-      resolve(result.apiUrl || DEFAULT_SIGNADOT_API_URL);
-    });
-  });
 };
 
 export default Settings;

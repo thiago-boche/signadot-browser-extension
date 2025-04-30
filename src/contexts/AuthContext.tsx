@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "./auth";
 import Layout from "../components/Layout/Layout";
 import { useStorage } from "./StorageContext/StorageContext";
+import { Intent, Spinner, SpinnerSize } from "@blueprintjs/core";
 
 const loadingIconPath = chrome.runtime.getURL("images/loading.gif");
 
@@ -17,6 +18,7 @@ interface AuthState {
   user: {
     firstName?: string;
     lastName?: string;
+    email?: string;
   };
 }
 
@@ -40,6 +42,7 @@ interface GetOrgsResponse {
       String?: string;
       Valid: boolean;
     };
+    email?: string;
   };
 }
 
@@ -88,6 +91,7 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
             user: {
               firstName: data.user.firstName?.String,
               lastName: data.user.lastName?.String,
+              email: data.user.email
             },
           });
 
