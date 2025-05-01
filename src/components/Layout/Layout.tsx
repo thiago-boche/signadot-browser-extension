@@ -14,7 +14,7 @@ interface Props {
 
 const Layout: React.FC<Props> = ({ children }) => {
   const { currentView, goToView } = useRouteView();
-  const { init, settings, setSettings, isAuthenticated } = useStorage();
+  const { isStoreLoaded, settings, setSettings, isAuthenticated } = useStorage();
   const { authState } = useAuth();
 
   const handleHomeChange = () => {
@@ -22,7 +22,7 @@ const Layout: React.FC<Props> = ({ children }) => {
   };
 
   return (
-    init && (
+    isStoreLoaded && (
       <div className={styles.container}>
         <div className={styles.topBar}>
           <div className={styles.logoContainer}>

@@ -46,7 +46,7 @@ const Home = () => {
       <ListRouteEntries
         routingEntities={routingEntities}
         setUserSelectedRoutingEntity={(e) => setCurrentRoutingKey(e.routingKey)}
-        orgName={authState?.org.name}
+        orgName={authState.org?.name}
       />
       <div className={styles.selectedEntity}>
         {pinnedRoutingEntityData ? (
@@ -70,18 +70,18 @@ const Home = () => {
 };
 
 const Frame = () => {
-  const { authState, isLoading } = useAuth();
+  const { authState } = useAuth();
   const { goToView } = useRouteView();
 
   useEffect(() => {
-    if (isLoading) {
+    if (authState.status === "loading") {
       goToView("loading");
-    } else if (authState) {
+    } else if (authState.status === "authenticated") {
       goToView("home");
     } else {
       goToView("login");
     }
-  }, [authState, isLoading]);
+  }, [authState]);
 
   return (
     <div className={styles.container}>

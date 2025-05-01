@@ -2,30 +2,31 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "./auth";
 import Layout from "../components/Layout/Layout";
 import { useStorage } from "./StorageContext/StorageContext";
-import { Intent, Spinner, SpinnerSize } from "@blueprintjs/core";
-
-const loadingIconPath = chrome.runtime.getURL("images/loading.gif");
 
 interface Props {
   children: React.ReactNode;
 }
 
-interface AuthState {
-  org: {
-    name: string;
-    displayName?: string;
-  };
-  user: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-  };
+interface User {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
 }
+
+interface Org {
+  name: string;
+  displayName?: string;
+}
+
+type AuthState = 
+  | { status: "loading"; user: undefined; org: undefined }
+  | { status: "unauthenticated"; user: undefined; org: undefined }
+  | { status: "authenticated"; user: User; org: Org };
 
 // Define the shape of the context
 interface AuthContextType {
-  authState?: AuthState;
-  isLoading: boolean;
+  authState: AuthState;
+  resetAuth: () => void;
 }
 
 interface GetOrgsResponse {
@@ -51,31 +52,54 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // AuthProvider component
 export const AuthProvider: React.FC<Props> = ({ children }) => {
-  const [authState, setAuthState] = useState<AuthState | undefined>(undefined);
-  const [authenticated, setAuthenticated] = useState<boolean | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
-  const { settings, setIsAuthenticated } = useStorage();
+  const [authState, setAuthState] = useState<AuthState>({
+    status: "loading",
+    user: undefined,
+    org: undefined
+  });
+  const { settings, isStoreLoaded, setIsAuthenticated } = useStorage();
   const { apiUrl, previewUrl } = settings.signadotUrls;
 
+  const resetAuth = () => {
+    setAuthState({
+      status: "unauthenticated",
+      user: undefined,
+      org: undefined
+    });
+    setIsAuthenticated(false);
+  };
+
   useEffect(() => {
-    if (!apiUrl || !previewUrl) return;
+    if (!apiUrl || !previewUrl || !isStoreLoaded) return;
+
+    setAuthState({
+      status: "loading",
+      user: undefined,
+      org: undefined
+    });
 
     auth(
       async (authenticated) => {
         if (!authenticated) {
           console.log("Not authenticated!");
-          setAuthenticated(false);
-          setIsLoading(false);
+          setAuthState({
+            status: "unauthenticated",
+            user: undefined,
+            org: undefined
+          });
           return;
         }
 
         try {
-          const response = await fetch(`${apiUrl}/api/v1/orgs`);
+          const response = await fetch(new URL("/api/v1/orgs", apiUrl).toString());
 
           if (response.status === 401 || !response.ok) {
-            setAuthenticated(false);
             setIsAuthenticated(false);
-            setIsLoading(false);
+            setAuthState({
+              status: "unauthenticated",
+              user: undefined,
+              org: undefined
+            });
             return;
           }
 
@@ -87,40 +111,42 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
           }
 
           setAuthState({
+            status: "authenticated",
             org: data.orgs[0],
             user: {
               firstName: data.user.firstName?.String,
               lastName: data.user.lastName?.String,
               email: data.user.email
-            },
+            }
           });
 
-          setAuthenticated(true);
           setIsAuthenticated(true);
-          setIsLoading(false);
         } catch (error) {
           console.error("Error fetching org:", error);
-          setAuthenticated(false);
           setIsAuthenticated(false);
-          setIsLoading(false);
+          setAuthState({
+            status: "unauthenticated",
+            user: undefined,
+            org: undefined
+          });
         }
       },
       { apiUrl, previewUrl },
     );
-  }, [apiUrl, previewUrl]);
+  }, [apiUrl, previewUrl, isStoreLoaded]);
 
   useEffect(() => {
-    if (authState === undefined) {
+    if (authState.status === "unauthenticated") {
       setIsAuthenticated(false);
     }
 
-    if (authState) {
+    if (authState.status === "authenticated") {
       setIsAuthenticated(true);
     }
   }, [authState]);
 
   return (
-    <AuthContext.Provider value={{ authState, isLoading }}>
+    <AuthContext.Provider value={{ authState, resetAuth }}>
       <Layout>{children}</Layout>
     </AuthContext.Provider>
   );

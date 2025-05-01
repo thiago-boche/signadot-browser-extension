@@ -5,12 +5,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useStorage } from "../../contexts/StorageContext/StorageContext";
 
 const Footer: React.FC = () => {
-  const { authState } = useAuth();
+  const { authState, resetAuth } = useAuth();
   const { settings } = useStorage();
 
   const handleLogout = () => {
-    const signoutUrl = `${settings.signadotUrls.dashboardUrl}/signout`;
+    const signoutUrl = new URL(`/signout`, settings.signadotUrls.dashboardUrl).toString();
     window.open(signoutUrl, '_blank');
+    resetAuth();
   };
 
   return (
