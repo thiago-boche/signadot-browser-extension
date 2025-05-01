@@ -35,6 +35,27 @@ const getHeaders = (
   });
 };
 
+const updateIcon = (shouldInject: boolean) => {
+  if (shouldInject) {
+    chrome.action.setIcon({
+      path: {
+        "16": "images/icons/icon16_active.png",
+        "48": "images/icons/icon48_active.png",
+        "128": "images/icons/icon128_active.png"
+      }
+    });
+  } else {
+    chrome.action.setIcon({
+      path: {
+        "16": "images/icons/icon16_inactive.png",
+        "48": "images/icons/icon48_inactive.png",
+        "128": "images/icons/icon128_inactive.png"
+      }
+    });
+  }
+};
+
+
 export const StorageProvider: React.FC<StorageProviderProps> = ({ children }) => {
   const [state, setState] = useState<StorageState>({
     isAuthenticated: false,
@@ -134,18 +155,17 @@ export const StorageProvider: React.FC<StorageProviderProps> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    const { isAuthenticated, currentRoutingKey, headers, traceparent } = state;
+    const { isAuthenticated, currentRoutingKey, headers, traceparent, settings } = state;
 
-    if (
-      shouldInjectHeader(isAuthenticated, currentRoutingKey, headers) &&
-      currentRoutingKey !== undefined &&
-      currentRoutingKey !== ""
-    ) {
+    const shouldInject = shouldInjectHeader(isAuthenticated, currentRoutingKey, headers, settings.enabled);
+    if (shouldInject && currentRoutingKey !== undefined && currentRoutingKey !== "") {
       const headersToInject = getHeaders(currentRoutingKey, headers, traceparent);
       setBrowserStoreValue(StorageBrowserKeys.headers, JSON.stringify(headersToInject));
     } else {
       setBrowserStoreValue(StorageBrowserKeys.headers, JSON.stringify([]));
     }
+
+    updateIcon(shouldInject);
   }, [state]);
 
   const handleSetRoutingKey = (value: string | undefined) => {
