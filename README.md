@@ -14,6 +14,8 @@ The Signadot Browser Extension simplifies testing web applications in sandbox en
 - Select the desired sandbox or route group from the extension dropdown.
 - Toggle the extension to "ON" to start routing traffic through the selected entity.
 
+Check out [the docs](https://www.signadot.com/docs/guides/developer-environments/access-sandboxes) for more information.
+
 ## Development
 
 ### Setup
