@@ -5,7 +5,7 @@ The Signadot Browser Extension simplifies testing web applications in sandbox en
 # 🚀 Features
 - Sandbox & Route Group Selection: Authenticate to view and select from a dropdown of available sandboxes and route groups.
 - One-Click Toggle: Easily enable or disable routing to sandbox environments without altering code.
-- Automatic Header Injection: Injects necessary headers like baggage, tracestate, and uberctx-sd-routing-key (as well as custom routing headers configured) to route traffic appropriately.
+- Automatic Header Injection: Injects necessary headers like baggage and tracestate (as well as custom routing headers configured) to route traffic appropriately.
 
 # 🛠️ Installation & Usage
 
