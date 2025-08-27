@@ -20,11 +20,23 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
-    - run: npm run build --if-present
+    - run: npm run build:all
     - run: npm test
+    - name: Upload Chrome Extension Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: signadot-chrome-extension-node-${{ matrix.node-version }}
+        path: dist-chrome/
+        retention-days: 30
+    - name: Upload Firefox Extension Artifact  
+      uses: actions/upload-artifact@v3
+      with:
+        name: signadot-firefox-extension-node-${{ matrix.node-version }}
+        path: dist-firefox/
+        retention-days: 30
