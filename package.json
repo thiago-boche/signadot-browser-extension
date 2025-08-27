@@ -5,8 +5,11 @@
   "main": "index.js",
   "scripts": {
     "watch": "webpack --config webpack/webpack.dev.js --watch",
+    "watch:firefox": "TARGET_BROWSER=firefox webpack --config webpack/webpack.dev.js --watch",
     "build": "webpack --config webpack/webpack.prod.js",
-    "clean": "rimraf dist",
+    "build:firefox": "TARGET_BROWSER=firefox webpack --config webpack/webpack.prod.js",
+    "build:all": "npm run build && npm run build:firefox",
+    "clean": "rimraf dist dist-chrome dist-firefox",
     "test": "npx jest",
     "prettier:write": "biome format --write src"
   },

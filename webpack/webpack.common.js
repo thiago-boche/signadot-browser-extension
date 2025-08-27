@@ -3,14 +3,18 @@ const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 const srcDir = path.join(__dirname, "..", "src");
 
+// Determine target browser from environment variable
+const targetBrowser = process.env.TARGET_BROWSER || 'chrome';
+const isFirefox = targetBrowser === 'firefox';
+
 module.exports = {
   entry: {
     popup: path.join(srcDir, 'popup.tsx'),
-    background: path.join(srcDir, 'service-worker.ts'),
+    background: path.join(srcDir, isFirefox ? 'service-worker-firefox.ts' : 'service-worker.ts'),
     content_script: path.join(srcDir, 'content_script.tsx'),
   },
   output: {
-    path: path.join(__dirname, "../dist/js"),
+    path: path.join(__dirname, `../dist-${targetBrowser}/js`),
     filename: "[name].js",
   },
   optimization: {
@@ -58,7 +62,22 @@ module.exports = {
   },
   plugins: [
     new CopyPlugin({
-      patterns: [{from: ".", to: "../", context: "public"}],
+      patterns: [
+        {
+          from: ".",
+          to: "../",
+          context: "public",
+          // Use Firefox manifest for Firefox build
+          transform(content, absoluteFrom) {
+            if (absoluteFrom.endsWith('manifest.json') && isFirefox) {
+              // Copy Firefox manifest instead
+              const fs = require('fs');
+              return fs.readFileSync(require('path').join(__dirname, '../public/manifest_firefox.json'));
+            }
+            return content;
+          }
+        }
+      ],
       options: {},
     }),
   ],
