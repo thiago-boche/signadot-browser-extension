@@ -9,6 +9,8 @@
     "build": "webpack --config webpack/webpack.prod.js",
     "build:firefox": "TARGET_BROWSER=firefox webpack --config webpack/webpack.prod.js",
     "build:all": "npm run build && npm run build:firefox",
+    "package:firefox": "npm run build:firefox && web-ext build --source-dir=dist-firefox --artifacts-dir=dist-firefox",
+    "run:firefox": "npm run build:firefox && web-ext run --source-dir=dist-firefox",
     "clean": "rimraf dist dist-chrome dist-firefox",
     "test": "npx jest",
     "prettier:write": "biome format --write src"
@@ -45,6 +47,7 @@
     "ts-jest": "^29.1.0",
     "ts-loader": "^8.0.0",
     "typescript": "^5.0.4",
+    "web-ext": "^8.9.0",
     "webpack": "^5.76.0",
     "webpack-cli": "^4.0.0",
     "webpack-merge": "^5.0.0"

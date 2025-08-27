@@ -1,6 +1,13 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-        "moduleResolution": "node"
-    }
+        "moduleResolution": "node",
+        "rootDir": ".",
+        "outDir": "./dist-test"
+    },
+    "include": [
+        "src/**/*",
+        "tests/**/*",
+        "typings.d.ts"
+    ]
 }

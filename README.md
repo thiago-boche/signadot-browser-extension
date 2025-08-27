@@ -28,6 +28,23 @@ The Signadot Browser Extension simplifies testing web applications in sandbox en
 
 Check out [the docs](https://www.signadot.com/docs/guides/developer-environments/access-sandboxes) for more information.
 
+## Browser Differences
+
+### Chrome Version
+- Uses Manifest V3
+- Uses `declarativeNetRequest` API for efficient header injection
+- Service worker background script
+- Built to `dist-chrome/` directory
+
+### Firefox Version  
+- Uses Manifest V2
+- Uses `webRequest` API with blocking requests for header injection
+- Traditional background script (not service worker)
+- Built to `dist-firefox/` directory
+- Requires additional permissions: `webRequest`, `webRequestBlocking`
+
+Both versions provide identical functionality but use browser-appropriate APIs for maximum compatibility and performance.
+
 ## Development
 
 ### Setup

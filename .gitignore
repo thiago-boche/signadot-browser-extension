@@ -3,6 +3,7 @@ node_modules/
 dist/
 dist-chrome/
 dist-firefox/
+dist-test/
 tmp/
 .idea/
 .vscode/
